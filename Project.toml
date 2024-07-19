@@ -1,7 +1,17 @@
 name = "MaxQ-Optim-3D"
 authors = ["Haoyun Li"]
-[compat]
-julia = "1.10.4"
-DrWatson = "2.15.0"
+
 [deps]
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+HYPRE = "b5ffcf37-a2bd-41ab-a3da-4bd9bc8ad771"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+Jutul = "2b460a1a-8a2b-45b2-b125-b5c536396eb9"
+JutulDarcy = "82210473-ab04-4dce-b31b-11573c4f8e0a"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SlimOptim = "e4c7bc62-5b23-4522-a1b9-71c2be45f1df"
+
+[compat]
+DrWatson = "2.13.0"
+julia = "1.10.3"

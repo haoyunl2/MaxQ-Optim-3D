@@ -1,5 +1,5 @@
 using DrWatson
-@quickactivate "MaxQ-Optim-3D"
+@quickactivate "Max-Optim-3D"
 
 # Here you may include files from the source directory
 include(srcdir("dummy_src_file.jl"))
