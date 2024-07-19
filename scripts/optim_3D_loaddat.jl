@@ -204,12 +204,14 @@ hydrau = depth_arr * 1000 * 9.807
 
 threshold = 1.5
 
-# set the bound for the fracture pressure 
-P_bound = hydrau + threshold * 10^6 
+## set the bound for the fracture pressure 
 
+# default hydraulic bound
+P_bound = hydrau .+ threshold * 10^6 
 
 BHP_bound = maximum(P_bound)
 
+# real bound
 
 # 1 psi to 6894.757 Pa
 
@@ -218,41 +220,36 @@ BHP_bound = maximum(P_bound)
 
 ## Define the objective function with log barrier method, 
 ## input variable here is the injection rate
+
+
+
 function myobjective(inj_rate)
 
     ## try to maximize the injection rate here
-    # inj_rate = 0.0075*sum(pv)/sum(dt_inject)
-
-
+    ## inj_rate = 0.0075*sum(pv)/sum(dt_inject) 
 
     rate_target = TotalRateTarget(inj_rate)
-    I_ctrl = InjectorControl(rate_target, [0.0, 1.0],
-        density = 900.0,
-    )
-
-
+    I_ctrl = InjectorControl(rate_target, [0.0, 1.0], density = 900.0)
+    
     controls = Dict(:Injector => I_ctrl)
     forces_inject = setup_reservoir_forces(model, control = controls)
 
     forces_shut = setup_reservoir_forces(model)
-    dt_shut = fill(365.0day, nstep_shut);
+    dt_shut = fill(365.0day, nstep_shut);   
 
     dt = vcat(dt_inject, dt_shut)
     forces = vcat(fill(forces_inject, nstep), fill(forces_shut, nstep_shut));
 
     # set up initial state
-    state0 = setup_reservoir_state(model,
-        Pressure = 200bar,
-        OverallMoleFractions = [1.0, 0.0],
-    )
+    state0 = setup_reservoir_state(model, Pressure = 200bar, OverallMoleFractions = [1.0, 0.0])
 
     # simulate the schedule
     wd, states, t = simulate_reservoir(state0, model, dt,
         parameters = parameters,
         forces = forces,
         max_timestep = 30day
-    )
-    
+    )   
+
     regu_term = 1e11
 
     obj = 0
@@ -260,25 +257,23 @@ function myobjective(inj_rate)
     obj -= inj_rate * t[end] * 900 / regu_term
 
     for i in 1:50
-        P = states[i][:Presure] 
+        P = states[i][:Pressure] 
 
-        P_bound
+        # P_bound
 
         BHP = wd[:Injector][:bhp][i]
 
-        BHP_bound
-
+        # BHP_bound
 
         if any(x->x<0, P - P_bound) || any(x->x<0, BHP - BHP_bound) 
             obj += Base.Inf
         else
             obj -= (sum(log.(P - P_bound)) + sum(log.(BHP - BHP_bound))) * t[1] / (1e4 * regu_term)
         end
+
     end
 
-    
     return obj, states
-
 
 end
 
@@ -313,7 +308,7 @@ ex_step_size = 0.01
 inj_rate = 0.03
 
 inj_arr = zeros(Float64, niterations+1)
-inj_arr[1, :] = inj_rate
+inj_arr[1] = inj_rate
 
 # set the initial p, the gradient descent direction
 grad = gradient_wrt_inj(inj_rate)
@@ -339,7 +334,7 @@ for j=1:niterations
 
     step_arr[j] = step
     inj_rate = proj(inj_rate + step * p)
-    inj_arr[j+1, :] = inj_rate
+    inj_arr[j+1] = inj_rate
 
     obj, states = myobjective(inj_rate)
 
