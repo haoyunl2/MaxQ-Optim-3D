@@ -74,25 +74,71 @@ end
 
 
 
-# 0.orginal universal permeability
+# # 0.orginal universal permeability
 
-# setup the simulation model
-domain = reservoir_domain(mesh, permeability = 1.0Darcy, porosity = 0.3, temperature = convert_to_si(30.0, :Celsius))
+# # sample 0
+# sp = 0
+
+# # setup the simulation model
+# domain = reservoir_domain(mesh, permeability = 1.0Darcy, porosity = 0.3, temperature = convert_to_si(30.0, :Celsius))
+
+# # Injector xy spatial position
+# Injector_xy = [302600 - base[1, 1], 3176650 - base[(nx + 1) * (ny + 1), 2]]
+
+# # Injector xyz coordinates
+# Injector_cor = (Int(round((Injector_xy[1] - points[1][1]) / (points[nx + 2][1] - points[1][1]))), 
+# Int(round((points[1][2] - Injector_xy[2]) / (points[1][2] - points[2][2]))),  nz - div(nz, 4))
+
+
+# # Injector = setup_well(domain, (65, 1, 1), name = :Injector)
+# Injector = setup_well(domain, (Injector_cor[1], Injector_cor[2], Injector_cor[3]), name = :Injector)
+# model, parameters = setup_reservoir_model(domain, :co2brine, wells = Injector);
+
+
+
+
+
+## 1.create the permeability with several layers
+
+# sample 1
+sp = 1
+
+perm1 = ones(nx, ny, nz) * 1.0Darcy
+perm1[:, :, 1] *= 0.0
+perm1[:, :, nz] *= 0.02 / 1000
+perm1[:, :, 3] .*= 40/1000
+perm1[:, :, 5] .*= 40/1000
+perm1[:, :, 7] .*= 40/1000
+
+
+poro1 = ones(nx, ny, nz) * 0.27
+poro1[:, :, 1] .*= 0.0
+poro1[:, :, nz] .*= 0.02/0.27
+poro1[:, :, 3] .*= 0.11/0.27
+poro1[:, :, 5] .*= 0.11/0.27
+poro1[:, :, 7] .*= 0.11/0.27
+
+domain = reservoir_domain(mesh, permeability = vec(perm1), porosity = vec(poro1), temperature = convert_to_si(30.0, :Celsius))
 
 Injector_xy = [302600 - base[1, 1], 3176650 - base[(nx + 1) * (ny + 1), 2]]
 
-Injector_cor = (round((Injector_xy[1] - points[1][1]) / (points[nx + 2][1] - points[1][1])), 
-round((points[1][2] - Injector_xy[2]) / (points[1][2] - points[2][2])))
+Injector_cor = (Int(round((Injector_xy[1] - points[1][1]) / (points[nx + 2][1] - points[1][1]))), 
+Int(round((points[1][2] - Injector_xy[2]) / (points[1][2] - points[2][2]))), nz - div(nz, 4))
 
 
 # Injector = setup_well(domain, (65, 1, 1), name = :Injector)
-Injector = setup_well(domain, (Int(Injector_cor[1]), Int(Injector_cor[2]), nz - div(nz, 4)), name = :Injector)
+Injector = setup_well(domain, (Injector_cor[1], Injector_cor[2], Injector_cor[3]), name = :Injector)
 model, parameters = setup_reservoir_model(domain, :co2brine, wells = Injector);
 
 
 
 
+
 # ## 2.create the permeability with several layers and fault
+
+# # sample 2
+# sp = 2
+
 # perm2 = ones(nx, ny, nz) * 1.0Darcy
 # perm2[:, :, 1] *= 0.0
 # perm2[:, :, nz] *= 0.02 / 1000
@@ -186,8 +232,13 @@ model, parameters = setup_reservoir_model(domain, :co2brine, wells = Injector);
 # model, parameters = setup_reservoir_model(domain, :co2brine, wells = Injector);
 
 
-# plot the model
+# #plot the model
 # plot_reservoir(model)
+
+
+# save the model for future plotting purpose
+save_object("3D_" * string(sp) * "/model" * ".jld2", model)
+
 
 
 # setup schedule
@@ -211,11 +262,34 @@ P_bound = hydrau .+ threshold * 10^6
 
 BHP_bound = maximum(P_bound)
 
-# real bound
+# real bound, do extrapolation
+# 3566 psi at 3688 ft
+# 4100 psi at 5283 ft
+# 6106 psi at 6350 ft
+# 8526 psi at 8969 ft 
 
 # 1 psi to 6894.757 Pa
 
 # 1 feet to 0.3048 meter
+
+# accepted fracture pressure raio
+using Polynomials
+ratio = 0.9
+
+x = [3688, 5283, 6350, 8969] * 0.3048
+y = [3566, 4100, 6106, 8526] * ratio * 6894.757
+
+p = fit(x, y, 2)
+ 
+# plot the fitted curve
+x_fit = range(minimum(x), stop=maximum(x)+1, length=100)
+y_fit = p.(x_fit)
+lines(x_fit, y_fit)
+
+# set the bound by the fitted curve
+P_bound = p.(depth_arr)
+
+BHP_bound = P_bound[Injector_cor[1] * Injector_cor[2] * Injector_cor[3]]
 
 
 ## Define the objective function with log barrier method, 
@@ -265,10 +339,10 @@ function myobjective(inj_rate)
 
         # BHP_bound
 
-        if any(x->x<0, P - P_bound) || any(x->x<0, BHP - BHP_bound) 
+        if any(x -> x < 0, P_bound - P) || any(x -> x < 0, BHP_bound - BHP) 
             obj += Base.Inf
         else
-            obj -= (sum(log.(P - P_bound)) + sum(log.(BHP - BHP_bound))) * t[1] / (1e4 * regu_term)
+            obj -= (sum(log.(P_bound - P)) + sum(log.(BHP_bound - BHP))) * t[1] / (1e4 * regu_term)
         end
 
     end
@@ -305,10 +379,13 @@ step_arr = zeros(niterations)
 ex_step_size = 0.01
 
 # set the initial injection rate
-inj_rate = 0.03
+inj_rate = 0.001
 
 inj_arr = zeros(Float64, niterations+1)
 inj_arr[1] = inj_rate
+
+# set the initial objective 
+obj, _ =  myobjective(inj_rate)
 
 # set the initial p, the gradient descent direction
 grad = gradient_wrt_inj(inj_rate)
@@ -328,7 +405,7 @@ for j=1:niterations
         return misfit
     end
 
-    step, fval = ls(θ, ex_step_size, fval, dot(grad, p))
+    step, obj = ls(θ, ex_step_size, obj, dot(grad, p))
 
     ex_step_size = step
 
@@ -338,30 +415,29 @@ for j=1:niterations
 
     obj, states = myobjective(inj_rate)
 
-    println("Iteration no: ",j,"; function value: ",fval) 
+    println("Iteration no: ",j,"; function value: ",obj) 
 
     # grad = gradient_wrt_inj(irateS, delta_irate, K_test)
     # p = -grad/norm(grad, Inf)
 
     # p = 1
-
+    
     obj_arr[j+1] = obj
+    
+    save_object("3D_" * string(sp) * "/states" * "_iter" * string(j) * ".jld2" , states)
 
-
-    save_object("3D_0/states" * "_iter" * string(j) * ".jld2" , states)
-
-
+    # The accuracy of the solver is set to be 98% 
+    
     if step < inj_rate * 0.02
         break
     end
-
+    
 end
 
 
-save_object("3D_0/" * ".jld2", obj_arr)
-save_object("3D_0/" * ".jld2", inj_arr)
-save_object("3D_0/" * ".jld2", step_array)
-
+save_object("3D_" * string(sp) * "/obj" * ".jld2", obj_arr)
+save_object("3D_" * string(sp) * "/inj" * ".jld2", inj_arr)
+save_object("3D_" * string(sp) * "/step" * ".jld2", step_arr)
 
 
 
