@@ -4,7 +4,7 @@
 import Pkg;Pkg.add("DrWatson")
 
 using DrWatson
-@quickactivate "Max-Optim-3D"
+@quickactivate "MaxQ-Optim-3D"
 
 using Jutul 
 using JutulDarcy
@@ -37,6 +37,35 @@ end
 domain = reservoir_domain(mesh, permeability = 1.0Darcy, porosity = 0.3, temperature = convert_to_si(30.0, :Celsius))
 Injector = setup_well(domain, (65, 1, 1), name = :Injector)
 model, parameters = setup_reservoir_model(domain, :co2brine, wells = Injector);
+
+
+# ## 1.create the permeability with several layers
+# perm1 = ones(nx, ny, nz) * 1.0Darcy
+# perm1[:, :, 1] *= 0.0
+# perm1[:, :, nz] *= 0.02 / 1000
+# perm1[:, :, 3] .*= 40/1000
+# perm1[:, :, 5] .*= 40/1000
+# perm1[:, :, 7] .*= 40/1000
+
+
+# poro1 = ones(nx, ny, nz) * 0.27
+# poro1[:, :, 1] .*= 0.0
+# poro1[:, :, nz] .*= 0.02/0.27
+# poro1[:, :, 3] .*= 0.11/0.27
+# poro1[:, :, 5] .*= 0.11/0.27
+# poro1[:, :, 7] .*= 0.11/0.27
+
+# domain = reservoir_domain(mesh, permeability = vec(perm1), porosity = vec(poro1), temperature = convert_to_si(30.0, :Celsius))
+
+# Injector_xy = [302600 - base[1, 1], 3176650 - base[(nx + 1) * (ny + 1), 2]]
+
+# Injector_cor = (round((Injector_xy[1] - points[1][1]) / (points[nx + 2][1] - points[1][1])), 
+# round((points[1][2] - Injector_xy[2]) / (points[1][2] - points[2][2])))
+
+
+# # Injector = setup_well(domain, (65, 1, 1), name = :Injector)
+# Injector = setup_well(domain, (Int(Injector_cor[1]), Int(Injector_cor[2]), nz - div(nz, 4)), name = :Injector)
+# model, parameters = setup_reservoir_model(domain, :co2brine, wells = Injector);
 
 
 
