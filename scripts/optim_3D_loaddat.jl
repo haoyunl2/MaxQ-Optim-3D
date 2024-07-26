@@ -1,7 +1,14 @@
 ## Maximize injection rate within fracture pressure bound with gradient-based 
 ## backtracking line search optimization solver
 
+
+## cd ~/ccs/MaxQ-Optim-3D
+## julia --project=.
+
+
 import Pkg; Pkg.add("DrWatson")
+Pkg.instantiate()  # This installs all dependencies listed in Project.toml
+Pkg.precompile()   # Precompile all installed packages
 
 using DrWatson
 @quickactivate "MaxQ-Optim-3D"
@@ -30,8 +37,8 @@ physical_dims = (1000.0, 1000.0, 1000.0)
 mesh = UnstructuredMesh(CartesianMesh(cart_dims, physical_dims))
 
 # Read the xyz position from 
-top = Matrix(CSV.read("../../data/CCS2_small_xyz.dat", DataFrame; header=false))
-base = Matrix(CSV.read("../../data/CCS2_small_base_xyz.dat", DataFrame; header=false))
+top = Matrix(CSV.read("../data/CCS2_small_xyz.dat", DataFrame; header=false))
+base = Matrix(CSV.read("../data/CCS2_small_base_xyz.dat", DataFrame; header=false))
 
 # using Geodesy
 
@@ -241,7 +248,7 @@ model, parameters = setup_reservoir_model(domain, :co2brine, wells = Injector);
 
 
 # save the model for future plotting purpose
-save_object("3D_" * string(sp) * "/model" * ".jld2", model)
+save_object("scripts/3D_" * string(sp) * "/model" * ".jld2", model)
 
 
 
@@ -428,7 +435,7 @@ for j=1:niterations
     
     obj_arr[j+1] = obj
     
-    save_object("3D_" * string(sp) * "/states" * "_iter" * string(j) * ".jld2" , states)
+    save_object("scripts/3D_" * string(sp) * "/states" * "_iter" * string(j) * ".jld2" , states)
 
     # The accuracy of the solver is set to be 98% 
     
@@ -439,9 +446,9 @@ for j=1:niterations
 end
 
 
-save_object("3D_" * string(sp) * "/obj" * ".jld2", obj_arr)
-save_object("3D_" * string(sp) * "/inj" * ".jld2", inj_arr)
-save_object("3D_" * string(sp) * "/step" * ".jld2", step_arr)
+save_object("scripts/3D_" * string(sp) * "/obj" * ".jld2", obj_arr)
+save_object("scripts/3D_" * string(sp) * "/inj" * ".jld2", inj_arr)
+save_object("scripts/3D_" * string(sp) * "/step" * ".jld2", step_arr)
 
 
 
