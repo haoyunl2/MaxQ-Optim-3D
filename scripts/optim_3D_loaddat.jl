@@ -7,8 +7,8 @@
 
 
 import Pkg; Pkg.add("DrWatson")
-Pkg.instantiate()  # This installs all dependencies listed in Project.toml
-Pkg.precompile()   # Precompile all installed packages
+# Pkg.instantiate()  # This installs all dependencies listed in Project.toml
+# Pkg.precompile()   # Precompile all installed packages
 
 using DrWatson
 @quickactivate "MaxQ-Optim-3D"
