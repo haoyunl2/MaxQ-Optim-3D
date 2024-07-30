@@ -28,3 +28,6 @@ using DrWatson
 @quickactivate "MaxQ-Optim-3D"
 ```
 which auto-activate the project and enable local path handling from DrWatson.
+
+
+This github is adapated from the (add the website later). The control framework is using gradient-based optimization solver to find the maximum CO2 injected amount within the fracture pressure. 
